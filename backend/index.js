@@ -7,6 +7,7 @@ import morgan from "morgan";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDb from "./config/connectDb.js";
+import authRouter from "./routes/auth.route.js";
 
 const app = express()
 
@@ -29,6 +30,8 @@ app.use(cookieParser())
 
 
 connectDb()
+
+app.use("/auth/api/v1",authRouter)
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
