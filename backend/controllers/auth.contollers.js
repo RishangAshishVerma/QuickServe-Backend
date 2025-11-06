@@ -6,72 +6,72 @@ import uploadOnCloudinary from "../utils/cloudinary.js"
 
 
 export const signup = async (req, res) => {
-    try {
-        const { name, email, phoneNo, password, role } = req.body
+  try {
+    const { name, email, phoneNo, password, role } = req.body
 
-        if (!name || !email || !phoneNo || !password || !role) {
-            return res.status(400).json({
-                success: false,
-                message: 'All fields are required.'
-            })
+    if (!name || !email || !phoneNo || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required.'
+      })
+    }
+    const existUser = await User.findOne({
+      $or: [{ email }, { phoneNo }]
+    });
+
+    if (!req.file?.path) {
+      return res.status(400).json({
+        success: false,
+        message: 'Avatar is required.'
+      })
+    }
+
+    if (existUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already exists with this email.',
+      });
+    }
+
+    const hashpassword = await bcrypt.hash(password, 9)
+
+    const user = await User.create({
+      name,
+      email,
+      phoneNo,
+      role,
+      password: hashpassword,
+      avatar: "",
+    });
+
+    const token = genToken(user._id, user.role);
+
+    res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      })
+      .status(201)
+      .json({
+        success: true,
+        message: 'User created successfully.',
+        data: user
+      });
+
+    (async () => {
+      if (req.file?.path) {
+        const imageUrl = await uploadOnCloudinary(req.file.path);
+        if (imageUrl) {
+          await User.findByIdAndUpdate(user._id, { avatar: imageUrl });
         }
-        const existUser = await User.findOne({
-            $or: [{ email }, { phoneNo }]
-        });
-
-        if (!req.file?.path) {
-            return res.status(400).json({
-                success: false,
-                message: 'Avatar is required.'
-            })
-        }
-
-        if (existUser) {
-            return res.status(400).json({
-                success: false,
-                message: 'User already exists with this email.',
-            });
-        }
-
-        const hashpassword = await bcrypt.hash(password, 9)
-
-        const user = await User.create({
-            name,
-            email,
-            phoneNo,
-            role,
-            password: hashpassword,
-            avatar: "",
-        });
-
-        const token = genToken(user._id, user.role);
-
-        res
-            .cookie('token', token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 7 * 24 * 60 * 60 * 1000,
-            })
-            .status(201)
-            .json({
-                success: true,
-                message: 'User created successfully.',
-                data: user
-            });
-
-        (async () => {
-            if (req.file?.path) {
-                const imageUrl = await uploadOnCloudinary(req.file.path);
-                if (imageUrl) {
-                    await User.findByIdAndUpdate(user._id, { avatar: imageUrl });
-                }
-            }
-            const ok = await sendMail(
-                user.email,
-                'Welcome to QuickSever!',
-                "Welcome to QuickSever — we're thrilled to have you with us.",
-                `
+      }
+      const ok = await sendMail(
+        user.email,
+        'Welcome to QuickSever!',
+        "Welcome to QuickSever — we're thrilled to have you with us.",
+        `
   <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 40px 0;">
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
       <tr>
@@ -120,16 +120,157 @@ export const signup = async (req, res) => {
     </table>
   </div>
   `
-            );
+      );
 
-            if (!ok) console.error('Welcome email failed (non-blocking).');
-        })();
+      if (!ok) console.error('Welcome email failed (non-blocking).');
+    })();
 
-    } catch (error) {
-        console.error('Error while creating the user:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Something went wrong while creating the user.'
-        });
+  } catch (error) {
+    console.error('Error while creating the user:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Something went wrong while creating the user.'
+    });
+  }
+};
+
+
+export const signIn = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields (name, email, password) are required.'
+      });
     }
+
+    const existUser = await User.findOne({ email })
+
+    if (!existUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with the provided email.'
+      });
+    }
+
+    if (existUser.isDelete === true) {
+      return res.status(403).json({
+        success: false,
+        message: 'This account has been deleted. Please contact customer support for assistance.'
+      });
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, existUser.password);
+
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password.'
+      });
+    }
+
+    const token = genToken(existUser._id, existUser.role);
+
+    res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+      })
+      .status(200)
+      .json({
+        success: true,
+        message: 'User logged in successfully.',
+        data: existUser
+      });
+
+  } catch (error) {
+
+    console.error('Error while logging in the user:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'An unexpected error occurred while logging in.'
+    });
+  }
+};
+
+export const signOut = async (req, res) => {
+  try {
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'User logged out successfully.',
+    });
+  } catch (error) {
+    console.error('Error while logging out the user:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'An unexpected error occurred while logging out.',
+    });
+  }
+};
+
+export const deleteAccount = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields (name, email, password) are required.'
+      });
+    }
+
+    const existUser = await User.findOne({ email })
+
+    if (!existUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with the provided email.'
+      });
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, existUser.password);
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password.'
+      });
+    }
+
+    existUser.isDelete = true;
+    await existUser.save();
+
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'User account deleted successfully.',
+      data: {
+        id: existUser._id,
+        name: existUser.name,
+        email: existUser.email,
+        role: existUser.role,
+        isDelete: existUser.isDelete
+      }
+    });
+  } catch (error) {
+    console.error('Error while deleting user account:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'An unexpected error occurred while deleting the account.'
+    });
+  }
 };
