@@ -19,6 +19,13 @@ export const signup = async (req, res) => {
       $or: [{ email }, { phoneNo }]
     });
 
+    if (existUser.isDelete === true) {
+      return res.status(403).json({
+        success: false,
+        message: 'This account has been deleted. Please contact customer support for assistance.'
+      });
+    }
+
     if (!req.file?.path) {
       return res.status(400).json({
         success: false,
@@ -134,7 +141,6 @@ export const signup = async (req, res) => {
   }
 };
 
-
 export const signIn = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -220,8 +226,16 @@ export const signOut = async (req, res) => {
 
 export const deleteAccount = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
 
+    const { name, email, password } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User token not found.",
+      });
+    }
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
