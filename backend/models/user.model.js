@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
 
-const userSchema = mongoose.Schema({
+const userSchema = new mongoose.Schema({
 
     name: {
         type: String,
@@ -10,7 +10,8 @@ const userSchema = mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        match: [/^\S+@\S+\.\S+$/, "Please enter a valid email address"]
     },
 
     phoneNo: {
@@ -45,6 +46,14 @@ const userSchema = mongoose.Schema({
         expiresAt: { type: Date },
     },
 
+    suspend: {
+        type: Boolean,
+        default: false
+    },
+
+    suspendedReason: {
+        type: String,   
+    },
 
 }, { timestamps: true })
 
