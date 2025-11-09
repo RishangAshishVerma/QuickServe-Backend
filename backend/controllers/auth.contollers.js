@@ -25,6 +25,15 @@ export const signup = async (req, res) => {
           message: 'This account has been deleted. Please contact customer support for assistance.'
         });
       }
+      if (existUser) {
+
+        if (existUser?.suspend) {
+          return res.status(403).json({
+            success: false,
+            message: 'This account has been suspended. Please contact customer support for assistance.'
+          });
+        }
+      }
 
       return res.status(400).json({
         success: false,
@@ -172,6 +181,12 @@ export const signIn = async (req, res) => {
       return res.status(403).json({
         success: false,
         message: 'This account has been deleted. Please contact customer support for assistance.'
+      });
+    }
+    if (existUser?.suspend) {
+      return res.status(403).json({
+        success: false,
+        message: 'This account has been suspended. Please contact customer support for assistance.'
       });
     }
 

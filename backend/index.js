@@ -10,6 +10,7 @@ import connectDb from "./config/connectDb.js";
 import authRouter from "./routes/auth.route.js";
 import meRouter from "./routes/me.routes.js";
 import userRouter from "./routes/user.route.js";
+import storeRoute from "./routes/store.route.js";
 
 const app = express()
 
@@ -36,6 +37,7 @@ connectDb()
 app.use("/auth/api/v1",authRouter)
 app.use("/me/api/v1",meRouter)
 app.use("/user/api/v1",userRouter)
+app.use("/store/api/v1",storeRoute)
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
