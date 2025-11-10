@@ -372,3 +372,80 @@ export const deleteAccount = async (req, res) => {
     })(); // <------------------------------------------------------------------ IIFE end here
   }
 };
+
+export const addAddress = async (req, res) => {
+  try {
+    const { address, userLocation } = req.body
+    const userId = req.user.id
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "user id not found."
+      })
+    }
+
+    if (!userLocation ||
+      userLocation.type !== "Point" ||
+      !Array.isArray(userLocation.coordinates) ||
+      userLocation.coordinates.length !== 2 ||
+      typeof userLocation.coordinates[0] !== "number" ||
+      typeof userLocation.coordinates[1] !== "number"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Store location must be a valid GeoJSON Point: { type: 'Point', coordinates: [lng, lat] }",
+      })
+    }
+
+    if (!address) {
+      return res.status(400).json({
+        success: false,
+        message: "address canot be empty",
+      })
+    }
+    const existing = await User.findById(userId)
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found."
+      })
+    }
+
+    if (existing.isDelete === true) {
+      return res.status(403).json({
+        success: false,
+        message: "User account is deleted."
+      })
+    }
+
+    if (existing.suspend === true) {
+      return res.status(403).json({
+        success: false,
+        message: "User account is suspended."
+      })
+    }
+
+    const updateUser = await User.findByIdAndUpdate(userId, {
+      address,
+      userLocation
+    }, { new: true }).select("-password")
+
+    return res.status(200).json({
+      success: true,
+      message: "User address added successfully",
+      data: {
+        address: updateUser.address,
+        userLocation: updateUser.userLocation
+      }
+    });
+
+  } catch (error) {
+    console.error(`Error while adding the user address:`, error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to add user address. Please try again later.",
+
+    });
+  }
+}

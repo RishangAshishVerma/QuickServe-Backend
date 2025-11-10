@@ -1,12 +1,15 @@
 import Store from "../models/store.model.js";
-import { DateTime } from "luxon"; 
+import User from '../models/user.model.js';
+import { DateTime } from "luxon";
+import sendMail from '../utils/nodemailer.js';
+
 
 const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/
 
 const toMinutes = (hhmm) => {
   const [h, m] = hhmm.split(":").map(Number)
   return h * 60 + m
-}  
+}
 
 const dayKeys = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 const keyByLuxonWeekday = (w) => dayKeys[w - 1]
@@ -19,77 +22,134 @@ const normalizeOpeningHours = (openingHours) => {
 }
 
 export const createStore = async (req, res) => {
-    try {
-        const {
-            owner,
-            storeName,
-            storeTimezone = "Asia/Kolkata",
-            storeLocation,
-            openingHours,
-        } = req.body
+  try {
+    const {
+      storeName,
+      storeTimezone = "Asia/Kolkata",
+      storeLocation,
+      openingHours,
+    } = req.body
 
-        if (!owner) {
-            return res.status(400).json({
-                success: false,
-                message: "Owner ID is required."
-            })
-        }
+    const ownerId = req.user.id
 
-        if (!storeName || !storeName.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: "Store name is required."
-            })
-        }
-
-        if (typeof storeTimezone !== "string" || !storeTimezone.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: "Store timezone must be a valid string."
-            })
-        }
-
-        if (!storeLocation ||
-            storeLocation.type !== "Point" ||
-            !Array.isArray(storeLocation.coordinates) ||
-            storeLocation.coordinates.length !== 2 ||
-            typeof storeLocation.coordinates[0] !== "number" ||
-            typeof storeLocation.coordinates[1] !== "number"
-        ) {
-            return res.status(400).json({
-                success: false,
-                message: "Store location must be a valid GeoJSON Point: { type: 'Point', coordinates: [lng, lat] }",
-            })
-        }
-
-        if (openingHours && typeof openingHours !== "object") {
-            return res.status(400).json({ success: false, message: "Opening hours must be an object." })
-        }
-
-        const normalizedHours = normalizeOpeningHours(openingHours)
-
-        const store = await Store.create({
-            owner,
-            storeName: storeName.trim(),
-            storeTimezone,
-            storeLocation,
-            openingHours: normalizedHours,
-            isVerified: false,
-            status: "pending",
-        })
-
-        return res.status(201).json({
-            success: true,
-            message: `Store "${storeName}" created successfully.`,
-        })
-
-    } catch (error) {
-        console.error("Error creating store:", error)
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error while creating store.",
-        })
+    if (!ownerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Owner ID is required."
+      })
     }
+
+    if (!storeName || !storeName.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Store name is required."
+      })
+    }
+
+    if (typeof storeTimezone !== "string" || !storeTimezone.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Store timezone must be a valid string."
+      })
+    }
+
+    if (!storeLocation ||
+      storeLocation.type !== "Point" ||
+      !Array.isArray(storeLocation.coordinates) ||
+      storeLocation.coordinates.length !== 2 ||
+      typeof storeLocation.coordinates[0] !== "number" ||
+      typeof storeLocation.coordinates[1] !== "number"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Store location must be a valid GeoJSON Point: { type: 'Point', coordinates: [lng, lat] }",
+      })
+    }
+
+    if (openingHours && typeof openingHours !== "object") {
+      return res.status(400).json({ success: false, message: "Opening hours must be an object." })
+    }
+
+    const normalizedHours = normalizeOpeningHours(openingHours)
+
+    const store = await Store.create({
+      owner: ownerId,
+      storeName: storeName.trim(),
+      storeTimezone,
+      storeLocation,
+      openingHours: normalizedHours,
+      isVerified: false,
+      status: "pending",
+    })
+
+    res.status(201).json({
+      success: true,
+      message: `Store "${storeName}" created successfully.`,
+    })
+
+    const user = await User.findById(ownerId).select("email name")
+
+    const ok = await sendMail(
+      user.email,
+      'Your Store Has Been Created Successfully — QuickSevere',
+      "Your store on QuickSevere has been created successfully. Please upload your documents for verification.",
+      `
+  <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 40px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+            <tr>
+              <td style="background-color: #007bff; text-align: center; padding: 25px;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">QuickSevere ⚡</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px; color: #333333;">
+                <h2 style="color: #007bff; margin-top: 0;">Store Created Successfully!</h2>
+                <p style="font-size: 16px;">Hi <strong>${user.name}</strong>,</p>
+                <p style="font-size: 15px; line-height: 1.6;">
+                  Congratulations! Your store has been successfully created on <strong>QuickSevere</strong>.
+                </p>
+                <p style="font-size: 15px; line-height: 1.6;">
+                  To complete the setup and verify your store, please upload and send all the required documents for verification.
+                </p>
+                <p style="font-size: 15px; line-height: 1.6;">
+                  Once your documents are verified, your store will be activated and visible to customers.
+                </p>
+                <p style="font-size: 14px; color: #555555; margin-top: 30px;">
+                  Best regards,<br>
+                  <strong>The QuickSevere Team</strong>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+                <p>© ${new Date().getFullYear()} QuickSevere. All rights reserved.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+  `
+    )
+
+    if (!ok) {
+      return res.status(400).json({
+        success: false,
+        message: "Error while sending the mail. Store creation rolled back."
+      })
+    }
+
+  } catch (error) {
+    console.error("Error creating store:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while creating store.",
+    })
+  }
 }
 
 
@@ -103,6 +163,12 @@ export const getStoreStatus = async (req, res) => {
     const todayKey = keyByLuxonWeekday(now.weekday)
     const today = store.openingHours?.[todayKey]
 
+    if (store.status === "pending") {
+      return res.status(200).json({
+        success: false,
+        message: "store is not active yet. Please submit the verification request."
+      })
+    }
 
     if (store.isDelete || store.status === "suspended") {
       return res.json({
@@ -141,7 +207,7 @@ export const getStoreStatus = async (req, res) => {
       }
     }
 
-    
+
     const desiredStatus = isOpenNow ? "active" : "closed"
     if (store.status !== desiredStatus) {
       store.status = desiredStatus
@@ -164,4 +230,4 @@ export const getStoreStatus = async (req, res) => {
     console.error("Error getting store status:", error);
     return res.status(500).json({ success: false, error: error.message || "Internal server error." })
   }
-};
+}

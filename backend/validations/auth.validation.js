@@ -8,7 +8,7 @@ export const userSchema = joi.object({
   avatar: joi.string().uri(),
   role: joi
     .string()
-    .valid("user", "rider", "warehouseOwner", "support", "admin")
+    .valid("user", "rider", "storeOwner", "support", "admin")
     .required(),
 });
 

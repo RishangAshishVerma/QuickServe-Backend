@@ -79,7 +79,7 @@ const storeSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: ["active", "suspended", "closed","pending"],
-        default: "active",
+        default: "pending",
         index: true
     },
 
