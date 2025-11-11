@@ -1,8 +1,11 @@
 import Store from "../models/store.model.js";
+import mongoose from 'mongoose';
 import User from '../models/user.model.js';
 import { DateTime } from "luxon";
 import sendMail from '../utils/nodemailer.js';
-
+import verificationRequest from "../models/VerificationRequest.js";
+import _ from "lodash"
+import uploadOnCloudinary from "../utils/cloudinary.js "
 
 const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/
 
@@ -231,3 +234,81 @@ export const getStoreStatus = async (req, res) => {
     return res.status(500).json({ success: false, error: error.message || "Internal server error." })
   }
 }
+
+export const submitVerificationRequest = async (req, res) => {
+  try {
+    const ownerId = req.user?.id;
+    if (!ownerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Owner id not found."
+      })
+    }
+
+    const { aadhaarCard, businessLicense, taxId, proofOfAddress, storePhotos } = req.files;
+
+    if (!aadhaarCard || !businessLicense || !taxId || !proofOfAddress || !storePhotos) {
+      return res.status(400).json({
+        success: false,
+        message: "Please upload all the documents."
+      })
+    }
+    const adminIds = await User.find({ role: 'admin' }).distinct('_id');
+
+    if (!adminIds.length) {
+      return res.status(400).json({
+        success: false,
+        message: "No admin users found to assign."
+      });
+    }
+    const randomAdminIds = adminIds[Math.floor(Math.random() * adminIds.length)];
+
+    const storeId = await Store.findOne({ owner: ownerId }).select("_id")
+
+    const request = await verificationRequest.create({
+      storeOwner: ownerId,
+      admin: randomAdminIds,
+      status: "pending",
+      storeId: storeId
+    })
+
+    const uploadOne = async (file) => {
+      if (!file?.path) return null;
+      return uploadOnCloudinary(file.path);
+    }
+
+    const aadhaarCardUrl = await uploadOne(aadhaarCard[0])
+    const businessLicenseUrl = await uploadOne(businessLicense[0])
+    const taxIdUrl = await uploadOne(taxId[0])
+    const proofOfAddressUrl = await uploadOne(proofOfAddress[0])
+    const storePhotoUrl = await uploadOne(storePhotos[0])
+
+    const update = {
+      ...(aadhaarCardUrl && { aadhaarCard: aadhaarCardUrl }),
+      ...(businessLicenseUrl && { businessLicense: businessLicenseUrl }),
+      ...(taxIdUrl && { taxId: taxIdUrl }),
+      ...(proofOfAddressUrl && { proofOfAddress: proofOfAddressUrl }),
+      ...(storePhotoUrl && { storePhotos: storePhotoUrl }),
+    }
+
+    const updated = await verificationRequest.findByIdAndUpdate(
+      request._id,
+      { $set: update },
+      { new: true }
+    )
+
+    return res.status(201).json({
+      success: true,
+      message: "Verification request submitted.",
+      data: updated
+    })
+
+  } catch (error) {
+    console.error("submitVerificationRequest error:", error)
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong.",
+    })
+  }
+}
+

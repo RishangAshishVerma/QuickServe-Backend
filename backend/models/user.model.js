@@ -51,25 +51,18 @@ const userSchema = new mongoose.Schema({
         trim: true
     },
 
-    userLocation: {
+    userlocation: {
         type: {
             type: String,
-            enum: ["Point"],
-            required: true
+            enum: ['Point'],
+            default: 'Point'
         },
         coordinates: {
             type: [Number],
-            required: true,
-            validate: {
-                validator: (arr) =>
-                    Array.isArray(arr) &&
-                    arr.length === 2 &&
-                    arr[0] >= -180 && arr[0] <= 180 &&
-                    arr[1] >= -90 && arr[1] <= 90,
-                message: "coordinates must be [lng, lat]"
-            }
+            default: undefined
         }
     },
+
 
     suspend: {
         type: Boolean,
