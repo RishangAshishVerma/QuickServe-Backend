@@ -1,5 +1,5 @@
 import express from "express"
-import { createStore, getStoreStatus, submitVerificationRequest, requestStatus } from "../controllers/store.controllers.js"
+import { createStore, getStoreStatus, submitVerificationRequest, requestStatus, getAdminRequest } from "../controllers/store.controllers.js"
 import isAuth from "../middleware/isAuth.middleware.js"
 import authorizeRole from "../middleware/AuthizeRole.middlleware.js"
 import upload from "../utils/multer.js"
@@ -18,5 +18,6 @@ storeRoute.post("/verification-request", isAuth, authorizeRole("storeOwner"), up
     { name: 'storePhotos', maxCount: 1 } // only one photo
 ]), submitVerificationRequest)
 storeRoute.post("/request-status/:id", isAuth, authorizeRole("admin"), requestStatus)
+storeRoute.get("/get-admin-request", isAuth, authorizeRole("admin"), getAdminRequest)
 
 export default storeRoute

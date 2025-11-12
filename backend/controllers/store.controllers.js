@@ -364,8 +364,6 @@ const deleteUploadedFiles = (files) => {
   })
 }
 
-
-
 export const requestStatus = async (req, res) => {
   try {
     const { status } = req.body
@@ -495,6 +493,41 @@ export const requestStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Something went wrong."
+    });
+  }
+};
+
+export const getAdminRequest = async (req, res) => {
+  try {
+    const adminId = req.user?.id;
+
+    if (!adminId) {
+      return res.status(400).json({
+        success: false,
+        message: "Admin ID not found in request."
+      });
+    }
+
+    const requests = await verificationRequest.find({ admin: adminId });
+
+    if (!requests || requests.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No verification requests found for this admin."
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Here are the verification requests.",
+      data: requests
+    });
+
+  } catch (error) {
+    console.error("Error fetching admin requests:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching admin requests.",
     });
   }
 };
