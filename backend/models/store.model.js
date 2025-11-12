@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { type } from "os";
 
 const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -33,6 +34,10 @@ const storeSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true
+    },
+
+    storeEmail: {
+        type: String
     },
 
     storeTimezone: {
@@ -78,7 +83,7 @@ const storeSchema = new mongoose.Schema({
 
     status: {
         type: String,
-        enum: ["active", "suspended", "closed","pending"],
+        enum: ["active", "suspended", "closed", "pending"],
         default: "pending",
         index: true
     },

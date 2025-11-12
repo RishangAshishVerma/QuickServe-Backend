@@ -7,8 +7,12 @@ const verificationRequestSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
     },
-    
+
     storeId: {
+        type: String
+    },
+
+    adminName: {
         type: String
     },
 

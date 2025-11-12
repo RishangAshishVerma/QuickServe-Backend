@@ -31,6 +31,7 @@ export const createStore = async (req, res) => {
       storeTimezone = "Asia/Kolkata",
       storeLocation,
       openingHours,
+      storeEmail
     } = req.body
 
     const ownerId = req.user.id
@@ -46,6 +47,13 @@ export const createStore = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Store name is required."
+      })
+    }
+
+    if (!storeEmail || !storeEmail.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: " store email is required."
       })
     }
 
@@ -70,7 +78,10 @@ export const createStore = async (req, res) => {
     }
 
     if (openingHours && typeof openingHours !== "object") {
-      return res.status(400).json({ success: false, message: "Opening hours must be an object." })
+      return res.status(400).json({
+        success: false,
+        message: "Opening hours must be an object."
+      })
     }
 
     const normalizedHours = normalizeOpeningHours(openingHours)
@@ -83,6 +94,7 @@ export const createStore = async (req, res) => {
       openingHours: normalizedHours,
       isVerified: false,
       status: "pending",
+      storeEmail
     })
 
     res.status(201).json({
@@ -226,8 +238,8 @@ export const getStoreStatus = async (req, res) => {
         localTime: now.toFormat("HH:mm"),
         isOpenNow,
         statusMessage,
-        persistedStatus: store.status
-      }
+        persistedStatus: store.status,
+      },
     })
   } catch (error) {
     console.error("Error getting store status:", error);
@@ -238,11 +250,24 @@ export const getStoreStatus = async (req, res) => {
 export const submitVerificationRequest = async (req, res) => {
   try {
     const ownerId = req.user?.id;
+
     if (!ownerId) {
       return res.status(400).json({
         success: false,
         message: "Owner id not found."
       })
+    }
+
+    const existingRequest = await verificationRequest.findOne({
+      storeOwner: ownerId,
+      status: "pending",
+    });
+
+    if (existingRequest) {
+      return res.status(400).json({
+        success: false,
+        message: "You already have a pending verification request.",
+      });
     }
 
     const { aadhaarCard, businessLicense, taxId, proofOfAddress, storePhotos } = req.files;
@@ -263,13 +288,16 @@ export const submitVerificationRequest = async (req, res) => {
     }
     const randomAdminIds = adminIds[Math.floor(Math.random() * adminIds.length)];
 
+    const admin = await User.findOne({ _id: randomAdminIds }).select("name");
+
     const storeId = await Store.findOne({ owner: ownerId }).select("_id")
 
     const request = await verificationRequest.create({
       storeOwner: ownerId,
       admin: randomAdminIds,
       status: "pending",
-      storeId: storeId
+      storeId: storeId._id,
+      adminName: admin.name
     })
 
     const uploadOne = async (file) => {
@@ -311,4 +339,137 @@ export const submitVerificationRequest = async (req, res) => {
     })
   }
 }
+
+export const requestStatus = async (req, res) => {
+  try {
+    const { status } = req.body
+    const loginAdmin = req.user?.id
+    const id = req.params?.id
+
+
+    if (!loginAdmin) {
+      return res.status(400).json({
+        success: false,
+        message: "admin id not found."
+      })
+    }
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "request id not provided."
+      })
+    }
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: "status is required."
+      })
+    }
+
+
+    const requestId = await verificationRequest.findById(id);
+    if (!requestId) {
+      return res.status(404).json({
+        success: false,
+        message: "Verification request not found."
+      })
+    }
+
+    if (String(requestId.admin) !== String(loginAdmin)) {
+      return res.status(403).json({
+        success: false,
+        message: "This request is not assigned to you."
+      });
+    }
+
+
+    const requestStatus = await verificationRequest.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+
+    if (String(status).toLowerCase() === "accepted") {
+      const storeId = requestStatus.storeId;
+      if (storeId) {
+        await Store.findByIdAndUpdate(storeId, {
+          status: "active",
+          isVerified: true,
+        })
+      }
+    }
+    const storedata = await Store.findById(requestStatus.storeId)
+
+    res.status(200).json({
+      success: true,
+      message: `Store verification request has been ${status}.`,
+      data: requestStatus,
+    })
+
+    const ok = await sendMail(
+      storedata.storeEmail,
+      `Your Store Verification Has Been ${status} — QuickSevere`,
+      `
+  <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 40px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+            <tr>
+              <td style="background-color: ${status === "accepted" ? "#28a745" : "#dc3545"
+      }; text-align: center; padding: 25px;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">QuickSevere ⚡</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 30px; color: #333333;">
+                <h2 style="color: ${status === "accepted" ? "#28a745" : "#dc3545"
+      }; margin-top: 0;">
+                  Store Verification ${status === "accepted" ? "Approved ✅" : "Reviewed ❌"
+      }
+                </h2>
+                <p style="font-size: 16px;">Hi <strong>${storedata.name}</strong>,</p>
+                <p style="font-size: 15px; line-height: 1.6;">
+                  ${status === "accepted"
+        ? `Great news! Your store on <strong>QuickSevere</strong> has been <strong>approved</strong> and is now <strong>active</strong>. Customers can now find and explore your store.`
+        : `We’ve reviewed your store verification request on <strong>QuickSevere</strong>. Unfortunately, it could not be approved at this time. Please check your submitted documents and update any incorrect or missing details before reapplying.`
+      }
+                </p>
+                <p style="font-size: 14px; color: #555555; margin-top: 30px;">
+                  Best regards,<br>
+                  <strong>The QuickSevere Team</strong>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color: #f0f0f0; text-align: center; padding: 15px; font-size: 13px; color: #777;">
+                <p>© ${new Date().getFullYear()} QuickSevere. All rights reserved.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+  `
+    );
+
+    if (!ok) {
+      return res.status(400).json({
+        success: false,
+        message: "Error while sending store status email.",
+      });
+    }
+
+
+
+  } catch (error) {
+    console.error("requestStatus ", error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong."
+    });
+  }
+};
 
