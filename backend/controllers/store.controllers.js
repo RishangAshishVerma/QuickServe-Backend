@@ -1,11 +1,12 @@
+import uploadOnCloudinary from "../utils/cloudinary.js "
 import Store from "../models/store.model.js";
-import mongoose from 'mongoose';
 import User from '../models/user.model.js';
 import { DateTime } from "luxon";
 import sendMail from '../utils/nodemailer.js';
 import verificationRequest from "../models/VerificationRequest.js";
 import _ from "lodash"
-import uploadOnCloudinary from "../utils/cloudinary.js "
+import fs from "fs";
+import path from "path";
 
 const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/
 
@@ -167,7 +168,6 @@ export const createStore = async (req, res) => {
   }
 }
 
-
 export const getStoreStatus = async (req, res) => {
   try {
     const store = await Store.findById(req.params.id)
@@ -249,9 +249,10 @@ export const getStoreStatus = async (req, res) => {
 
 export const submitVerificationRequest = async (req, res) => {
   try {
-    const ownerId = req.user?.id;
+    const ownerId = req.user?.id
 
     if (!ownerId) {
+      deleteUploadedFiles(req.files)
       return res.status(400).json({
         success: false,
         message: "Owner id not found."
@@ -261,36 +262,47 @@ export const submitVerificationRequest = async (req, res) => {
     const existingRequest = await verificationRequest.findOne({
       storeOwner: ownerId,
       status: "pending",
-    });
+    })
 
     if (existingRequest) {
+      deleteUploadedFiles(req.files)
       return res.status(400).json({
         success: false,
         message: "You already have a pending verification request.",
-      });
+      })
     }
 
-    const { aadhaarCard, businessLicense, taxId, proofOfAddress, storePhotos } = req.files;
+    const { aadhaarCard, businessLicense, taxId, proofOfAddress, storePhotos } = req.files
 
     if (!aadhaarCard || !businessLicense || !taxId || !proofOfAddress || !storePhotos) {
+      deleteUploadedFiles(req.files)
       return res.status(400).json({
         success: false,
         message: "Please upload all the documents."
       })
     }
-    const adminIds = await User.find({ role: 'admin' }).distinct('_id');
+
+    const adminIds = await User.find({ role: 'admin' }).distinct('_id')
 
     if (!adminIds.length) {
+      deleteUploadedFiles(req.files)
       return res.status(400).json({
         success: false,
         message: "No admin users found to assign."
-      });
+      })
     }
-    const randomAdminIds = adminIds[Math.floor(Math.random() * adminIds.length)];
 
-    const admin = await User.findOne({ _id: randomAdminIds }).select("name");
-
+    const randomAdminIds = adminIds[Math.floor(Math.random() * adminIds.length)]
+    const admin = await User.findOne({ _id: randomAdminIds }).select("name")
     const storeId = await Store.findOne({ owner: ownerId }).select("_id")
+
+    if (!storeId) {
+      deleteUploadedFiles(req.files)
+      return res.status(404).json({
+        success: false,
+        message: "Store not found."
+      })
+    }
 
     const request = await verificationRequest.create({
       storeOwner: ownerId,
@@ -301,8 +313,8 @@ export const submitVerificationRequest = async (req, res) => {
     })
 
     const uploadOne = async (file) => {
-      if (!file?.path) return null;
-      return uploadOnCloudinary(file.path);
+      if (!file?.path) return null
+      return uploadOnCloudinary(file.path)
     }
 
     const aadhaarCardUrl = await uploadOne(aadhaarCard[0])
@@ -333,12 +345,26 @@ export const submitVerificationRequest = async (req, res) => {
 
   } catch (error) {
     console.error("submitVerificationRequest error:", error)
+    deleteUploadedFiles(req.files)
     return res.status(500).json({
       success: false,
       message: "Something went wrong.",
     })
   }
 }
+
+const deleteUploadedFiles = (files) => {
+  if (!files) return
+  Object.values(files).forEach(fileArray => {
+    fileArray.forEach(file => {
+      if (file?.path && fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path)
+      }
+    })
+  })
+}
+
+
 
 export const requestStatus = async (req, res) => {
   try {
@@ -472,4 +498,3 @@ export const requestStatus = async (req, res) => {
     });
   }
 };
-
