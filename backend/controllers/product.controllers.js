@@ -104,7 +104,7 @@ export const addProduct = async (req, res) => {
                         productMedia: productmedia
                     });
 
-                    console.log("Background Cloudinary upload completed", productmedia);
+                    console.log("Background Cloudinary upload completed");
 
                 } catch (err) {
                     console.error("Background upload error", err);
