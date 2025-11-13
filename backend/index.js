@@ -11,7 +11,7 @@ import authRouter from "./routes/auth.route.js";
 import meRouter from "./routes/me.routes.js";
 import userRouter from "./routes/user.route.js";
 import storeRoute from "./routes/store.route.js";
-import productRouter from "./routes/prooduct.route.js";
+import productRouter from "./routes/product.route.js";
 
 const app = express()
 

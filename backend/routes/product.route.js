@@ -7,7 +7,7 @@ import { addProduct } from "../controllers/product.controllers.js"
 
 const productRouter = express.Router()
 
-productRouter.post("/add-product/:id",isAuth,addProduct)
+    productRouter.post("/add-product/:id", isAuth, upload.array('productMedia', 10), addProduct)
 
 
 export default productRouter

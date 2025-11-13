@@ -53,12 +53,6 @@ const productSchema = new mongoose.Schema(
             default: false,
         },
 
-
-        location: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'userlocations'
-        },
-
         attributes: {
             type: Object,
             default: {},
