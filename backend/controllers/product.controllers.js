@@ -84,6 +84,7 @@ export const addProduct = async (req, res) => {
             message: "Product created. Media is uploading in background",
             data: product
         })
+
         try {
 
             (async () => {
@@ -92,9 +93,9 @@ export const addProduct = async (req, res) => {
 
                     if (req.files?.length) {
                         for (const file of req.files) {
-                            const uploaded = await uploadOnCloudinary(file.path);
-                            if (uploaded?.url) {
-                                productmedia.push(uploaded.secure_url);
+                            const uploadedUrl = await uploadOnCloudinary(file.path);
+                            if (uploadedUrl) {
+                                productmedia.push(uploadedUrl);
                             }
                         }
                     }
@@ -103,16 +104,17 @@ export const addProduct = async (req, res) => {
                         productMedia: productmedia
                     });
 
-                    console.log("Background Cloudinary upload completed:", productmedia);
+                    console.log("Background Cloudinary upload completed", productmedia);
 
                 } catch (err) {
-                    console.error("Background upload error:", err);
+                    console.error("Background upload error", err);
                 }
             })();
 
         } catch (error) {
-            console.error("Background upload error:", err);
+            console.error("Background upload error", error);
         }
+
 
     } catch (error) {
 
