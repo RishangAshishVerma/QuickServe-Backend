@@ -27,7 +27,7 @@ export const addProduct = async (req, res) => {
         }
 
         if (!productMedia) {
-            return res.status(400).json({-
+            return res.status(400).json({
                 success: false,
                 message: "no file found."
             });
