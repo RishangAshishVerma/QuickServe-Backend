@@ -54,17 +54,10 @@ const storeSchema = new mongoose.Schema({
         },
         coordinates: {
             type: [Number],
-            required: true,
-            validate: {
-                validator: (arr) =>
-                    Array.isArray(arr) &&
-                    arr.length === 2 &&
-                    arr[0] >= -180 && arr[0] <= 180 &&
-                    arr[1] >= -90 && arr[1] <= 90,
-                message: "coordinates must be [lng, lat]"
-            }
+            required: true
         }
     },
+
 
     openingHours: {
         monday: { type: daySchema },

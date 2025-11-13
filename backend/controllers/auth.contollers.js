@@ -375,7 +375,7 @@ export const deleteAccount = async (req, res) => {
 
 export const addAddress = async (req, res) => {
   try {
-    const { address, userLocation } = req.body
+    const { address, userlocation } = req.body
     const userId = req.user.id
 
     if (!userId) {
@@ -385,12 +385,12 @@ export const addAddress = async (req, res) => {
       })
     }
 
-    if (!userLocation ||
-      userLocation.type !== "Point" ||
-      !Array.isArray(userLocation.coordinates) ||
-      userLocation.coordinates.length !== 2 ||
-      typeof userLocation.coordinates[0] !== "number" ||
-      typeof userLocation.coordinates[1] !== "number"
+    if (!userlocation ||
+      userlocation.type !== "Point" ||
+      !Array.isArray(userlocation.coordinates) ||
+      userlocation.coordinates.length !== 2 ||
+      typeof userlocation.coordinates[0] !== "number" ||
+      typeof userlocation.coordinates[1] !== "number"
     ) {
       return res.status(400).json({
         success: false,
@@ -428,7 +428,7 @@ export const addAddress = async (req, res) => {
 
     const updateUser = await User.findByIdAndUpdate(userId, {
       address,
-      userLocation
+      userlocation
     }, { new: true }).select("-password")
 
     return res.status(200).json({
@@ -436,7 +436,7 @@ export const addAddress = async (req, res) => {
       message: "User address added successfully",
       data: {
         address: updateUser.address,
-        userLocation: updateUser.userLocation
+        userlocation: updateUser.userlocation
       }
     });
 
