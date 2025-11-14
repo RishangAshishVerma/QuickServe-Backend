@@ -57,6 +57,13 @@ export const addProduct = async (req, res) => {
 
         const store = await Store.findById(storeId)
 
+        if (store.isDelist === true) {
+            return res.status(400).json({
+                success: false,
+                message: "product is deleted "
+            })
+        }
+
         if (!store) {
             return res.status(500).json({
                 success: false,
@@ -125,4 +132,86 @@ export const addProduct = async (req, res) => {
             message: "An error occurred"
         })
     }
-};  
+}
+
+export const deletedProduct = async (req, res) => {
+    try {
+        const productId = req.params?.id;
+
+        if (!productId) {
+            return res.status(400).json({
+                success: false,
+                message: "Product ID is required"
+            });
+        }
+
+
+        const updatedProduct = await Product.findByIdAndUpdate(
+            productId,
+            { isDelist: true },
+            { new: true }
+        );
+
+        if (!updatedProduct) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Product successfully delisted",
+            data: {
+                id: updatedProduct._id,
+                title: updatedProduct.title,
+                isDelist: updatedProduct.isDelist,
+            }
+        });
+
+    } catch (error) {
+        console.error(`Error while deleting product: ${error}`);
+
+        return res.status(500).json({
+            success: false,
+            message: "Server error while deleting product"
+        });
+    }
+}
+
+export const getAllProduct = async (req, res) => {
+    try {
+        const storeId = req.params?.id
+
+        if (!storeId) {
+            return res.status(400).json({
+                success: false,
+                message: "Product ID is required"
+            });
+        }
+
+        const getAllProduct = await Product.find({ storeInfo: storeId ,  isDelist: false}).lean()
+
+        if (!getAllProduct) {
+            return res.status(400).json({
+                success: false,
+                message: "Product ID is required"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            count:getAllProduct.length,
+            message: " all rpoduct",
+            product: getAllProduct,
+        })
+
+    } catch (error) {
+        console.error(`Error while getting  product: ${error}`);
+
+        return res.status(500).json({
+            success: false,
+            message: "Server error while getting product"
+        });
+    }
+}

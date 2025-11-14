@@ -364,6 +364,37 @@ const deleteUploadedFiles = (files) => {
   })
 }
 
+export const getCurrentStore = async (req, res) => {
+  try {
+    const userId = req.user?.id
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: "User ID is missing."
+      })
+    }
+
+    const store = await Store.findOne({ owner: userId })
+
+    if (!store) {
+      return res.status(400).json({
+        success: false,
+        error: "Store not found."
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:"store id ",
+      storeid: store._id
+    })
+
+  } catch (error) {
+
+  }
+}
+
 export const requestStatus = async (req, res) => {
   try {
     const { status } = req.body
