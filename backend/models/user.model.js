@@ -73,5 +73,8 @@ const userSchema = new mongoose.Schema({
 
 }, { timestamps: true })
 
+userSchema.index({ storeLocation: "2dsphere" })
+userSchema.index({ owner: 1 })
+
 const User = mongoose.model("user", userSchema)
 export default User

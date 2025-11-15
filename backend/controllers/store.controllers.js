@@ -386,7 +386,7 @@ export const getCurrentStore = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message:"store id ",
+      message: "store id ",
       storeid: store._id
     })
 
@@ -562,3 +562,69 @@ export const getAdminRequest = async (req, res) => {
     });
   }
 };
+
+export const getNearbyStores = async (req, res) => {
+  try {
+    const loggedInUserId = req.user.id;
+
+    if (!loggedInUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Logged-in user ID is required"
+      });
+    }
+
+    const loggedInUser = await User.findById(loggedInUserId);
+
+    if (!loggedInUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    const longitude = loggedInUser.userlocation?.coordinates?.[0];
+    const latitude = loggedInUser.userlocation?.coordinates?.[1];
+
+    if (
+      latitude === undefined || longitude === undefined ||
+      typeof latitude !== "number" || typeof longitude !== "number" ||
+      isNaN(latitude) || isNaN(longitude) ||
+      latitude < -90 || latitude > 90 ||
+      longitude < -180 || longitude > 180
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid latitude or longitude. Please provide your address to access this page."
+      });
+    }
+
+    const store = await Store.find({
+      storeLocation: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [longitude, latitude]
+          },
+          $maxDistance: 20000
+        }
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Nearby restaurants found",
+      count: store.length,
+      data: store
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+

@@ -1,5 +1,5 @@
 import express from "express"
-import { createStore, getStoreStatus, submitVerificationRequest, requestStatus, getAdminRequest, getCurrentStore } from "../controllers/store.controllers.js"
+import { createStore, getStoreStatus, submitVerificationRequest, requestStatus, getAdminRequest, getCurrentStore, getNearbyStores } from "../controllers/store.controllers.js"
 import isAuth from "../middleware/isAuth.middleware.js"
 import authorizeRole from "../middleware/AuthizeRole.middlleware.js"
 import upload from "../utils/multer.js"
@@ -20,5 +20,6 @@ storeRoute.post("/verification-request", isAuth, authorizeRole("storeOwner"), up
 storeRoute.post("/request-status/:id", isAuth, authorizeRole("admin"), requestStatus)
 storeRoute.get("/get-admin-request", isAuth, authorizeRole("admin"), getAdminRequest)
 storeRoute.get("/current-store" , isAuth , authorizeRole("storeOwner"),getCurrentStore)
+storeRoute.get("/get-near-by-stores",isAuth,getNearbyStores)
 
 export default storeRoute
