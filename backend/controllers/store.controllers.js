@@ -628,3 +628,39 @@ export const getNearbyStores = async (req, res) => {
   }
 };
 
+export const getStoreById = async (req, res) => {
+  try {
+    const storeId = req.params.id
+
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        message: "store ID is required"
+      });
+    }
+
+    const storeData = await Store.findById(storeId)
+
+    if (!storeData) {
+      return res.status(400).json({
+        success: false,
+        message: "store not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "your store",
+      data: storeData
+    })
+  } catch (error) {
+
+    console.log(`error while getting store by id ${error}`);
+
+    return res.status(500).json({
+      success: false,
+      message: "error while getting store by id ",
+    })
+
+  }
+}
