@@ -186,7 +186,7 @@ export const getAllProduct = async (req, res) => {
         if (!storeId) {
             return res.status(400).json({
                 success: false,
-                message: "Product ID is required"
+                message: "store ID is required"
             });
         }
 
