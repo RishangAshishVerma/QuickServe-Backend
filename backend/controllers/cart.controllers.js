@@ -158,3 +158,80 @@ export const updateCart = async (req, res) => {
         });
     }
 };
+
+export const getCartById = async (req, res) => {
+    try {
+        const userId = req.user?.id
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "userId is required"
+            })
+        }
+
+        const cart = await Cart.findOne({ userId });
+
+        if (!cart) {
+            return res.status(400).json({
+                success: false,
+                message: " cart not found "
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "cart found",
+            data: cart
+        })
+    } catch (error) {
+        console.log(`error while getting the cart of the login user ${error}`);
+
+        return res.status(200).json({
+            success: false,
+            message: "error while getting the cart of the login user"
+        })
+
+    }
+};
+
+export const clearCart = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing userId'
+            });
+        }
+
+        const cart = await Cart.findOneAndUpdate(
+            { userId: userId },
+            { $set: { products: [] } },
+            { new: true }
+        );
+
+        if (!cart) {
+            return res.status(404).json({
+                success: false,
+                message: 'Cart not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Cart cleared',
+            data: cart
+        });
+
+    } catch (error) {
+        console.error(`'clearCart error ${error}'`);
+
+        return res.status(500).json({
+            success: false,
+            error: 'clearCart error'
+        });
+    }
+};
+

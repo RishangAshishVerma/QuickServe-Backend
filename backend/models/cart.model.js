@@ -23,7 +23,14 @@ const cartSchema = new mongoose.Schema({
                 default: 1
             }
         }
-    ]
+    ],
+
+    isPlaced: {
+        type: String,
+        enum: ["placed", "cancel", "notPlaced"],
+        default: "notPlaced"
+    }
+
 });
 
 const Cart = mongoose.model("cart", cartSchema)
