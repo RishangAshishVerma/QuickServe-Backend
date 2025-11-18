@@ -1,5 +1,20 @@
 import mongoose from "mongoose"
 
+export const locationSchema = new mongoose.Schema(
+    {
+        type: {
+            type: String,
+            enum: ["Point"],
+            default: "Point",
+        },
+        coordinates: {
+            type: [Number], // [lng, lat]
+            required: true,
+        },
+    },
+    { _id: false }
+);
+
 const userSchema = new mongoose.Schema({
 
     name: {
@@ -41,9 +56,9 @@ const userSchema = new mongoose.Schema({
         default: false
     },
 
-    otp: {
-        code: { type: String },
-        expiresAt: { type: Date },
+    isAvailable: {
+        type: Boolean,
+        default: false
     },
 
     address: {
@@ -51,30 +66,21 @@ const userSchema = new mongoose.Schema({
         trim: true
     },
 
-    userlocation: {
-    type: {
-        type: String,
-        enum: ["Point"],
-    },
-    coordinates: {
-        type: [Number],
-        required: true
-    }
-},
+    userlocation: locationSchema,
 
     suspend: {
-    type: Boolean,
-    default: false
-},
+        type: Boolean,
+        default: false
+    },
 
     suspendedReason: {
-    type: String,
-},
+        type: String,
+    },
 
 }, { timestamps: true })
 
-userSchema.index({ storeLocation: "2dsphere" })
-userSchema.index({ owner: 1 })
+userSchema.index({ userlocation: "2dsphere" });
+
 
 const User = mongoose.model("user", userSchema)
 export default User

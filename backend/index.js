@@ -13,6 +13,7 @@ import userRouter from "./routes/user.route.js";
 import storeRoute from "./routes/store.route.js";
 import productRouter from "./routes/product.route.js";
 import cartRouter from "./routes/cart.route.js";
+import orderRouter from "./routes/order.route.js";
 
 const app = express()
 
@@ -42,6 +43,7 @@ app.use("/user/api/v1",userRouter)
 app.use("/store/api/v1",storeRoute)
 app.use("/product/api/v1",productRouter)
 app.use("/cart/api/v1",cartRouter)
+app.use("/order/api/v1",orderRouter)
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

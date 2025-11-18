@@ -22,6 +22,21 @@ const daySchema = new mongoose.Schema({
     }
 }, { _id: false });
 
+export const StorelocationSchema = new mongoose.Schema(
+    {
+        type: {
+            type: String,
+            enum: ["Point"],
+            default: "Point",
+        },
+        coordinates: {
+            type: [Number], // [lng, lat]
+            required: true,
+        },
+    },
+    { _id: false }
+);
+
 
 const storeSchema = new mongoose.Schema({
     owner: {
@@ -46,18 +61,7 @@ const storeSchema = new mongoose.Schema({
         default: "Asia/Kolkata"
     },
 
-    storeLocation: {
-        type: {
-            type: String,
-            enum: ["Point"],
-            required: true
-        },
-        coordinates: {
-            type: [Number],
-            required: true
-        }
-    },
-
+    storeLocation: StorelocationSchema,
 
     openingHours: {
         monday: { type: daySchema },
@@ -89,7 +93,6 @@ const storeSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 storeSchema.index({ storeLocation: "2dsphere" })
-storeSchema.index({ owner: 1 })
 
 const Store = mongoose.model("Store", storeSchema)
 export default Store
