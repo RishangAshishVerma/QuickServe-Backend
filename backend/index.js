@@ -35,7 +35,7 @@ app.use(morgan("dev"))
 app.use(cookieParser())
 
 
-connectDb()
+connectDb();
 
 app.use("/auth/api/v1",authRouter)
 app.use("/me/api/v1",meRouter)

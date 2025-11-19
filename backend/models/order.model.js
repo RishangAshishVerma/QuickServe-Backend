@@ -1,6 +1,6 @@
 import mongoose from "mongoose"
-import {locationSchema} from "../models/user.model.js"
-import {StorelocationSchema} from "../models/store.model.js"
+import { locationSchema } from "../models/user.model.js"
+import { StorelocationSchema } from "../models/store.model.js"
 
 const orderSchema = new mongoose.Schema(
     {
@@ -39,8 +39,8 @@ const orderSchema = new mongoose.Schema(
 
         status: {
             type: String,
-            enum: ["pending", "accepted", "on_the_way", "delivered", "cancelled"],
-            default: "pending",
+            enum: ["pending", "accepted", "out for delivery", "delivered", "cancelled"],
+            default:  "pending",
         },
     },
     { timestamps: true }

@@ -1,5 +1,4 @@
 import mongoose from "mongoose"
-
 export const locationSchema = new mongoose.Schema(
     {
         type: {
@@ -9,11 +8,12 @@ export const locationSchema = new mongoose.Schema(
         },
         coordinates: {
             type: [Number], // [lng, lat]
-            required: true,
+            required: false, // <-- change this
         },
     },
     { _id: false }
 );
+
 
 const userSchema = new mongoose.Schema({
 

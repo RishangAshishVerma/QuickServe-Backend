@@ -2,6 +2,7 @@ const authorizeRole = (...allowedRoles) => {
     return async (req, res, next) => {
         try {
             const userRole = req.user?.role;
+console.log(userRole);
 
             if (!userRole) {
                 return res.status(401).json({
