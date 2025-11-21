@@ -249,3 +249,70 @@ export const acceptOrder = async (req, res) => {
         });
     }
 };
+
+export const getUserOrder = async (req, res) => {
+    try {
+
+        const userId = req.user.id
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user id."
+            });
+        }
+
+        const userOrder = await Order.find({ userId: userId });
+
+        return res.status(200).json({
+            success: true,
+            message: "user order status",
+            data: userOrder
+        });
+
+    } catch (error) {
+
+        console.log(`error while getting currect user order ${error}`);
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+        });
+    }
+}
+
+export const getStoreOrder = async (req, res) => {
+    try {
+        const userId = req.user.id
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user id."
+            });
+        }
+
+        const store = await Store.find({ owner: userId }).select("_id")
+
+        if (!store) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user id."
+            });
+        }
+
+        const userOrder = await Order.find({ storeId: store });
+
+        return res.status(200).json({
+            success: true,
+            message: "store order status",
+            data: userOrder
+        });
+
+    } catch (error) {
+        console.log(`error while getting currect store order ${error}`);
+        return res.status(500).json({
+            success: false,
+            message: "Server error.",
+        });
+    }
+}
