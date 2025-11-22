@@ -1,4 +1,5 @@
 import Cart from "../models/cart.model.js"
+import Product from "../models/product.model.js";
 
 export const createCart = async (req, res) => {
     try {
@@ -28,15 +29,27 @@ export const createCart = async (req, res) => {
             });
         }
 
+        const product = await Product.findById(productId).select("price");
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        const price = Number(product.price) || 0;
+        const subtotal = price * quantity;
+
         const cart = await Cart.create({
             storeId,
             userId,
             products: [
                 {
                     productId,
-                    quantity
+                    quantity,
+                    price
                 }
-            ]
+            ],
         });
 
         return res.status(201).json({
@@ -46,15 +59,14 @@ export const createCart = async (req, res) => {
         });
 
     } catch (error) {
-
         console.log(`error while creating the cart ${error}`);
 
         return res.status(500).json({
             success: false,
-            message: "Server error",
+            message: "Server error"
         });
     }
-}
+};
 
 export const updateCart = async (req, res) => {
     try {
@@ -99,19 +111,17 @@ export const updateCart = async (req, res) => {
         );
 
         if (remove) {
-            const updatedCart = await Cart.findByIdAndUpdate(
-                cartId,
-                { $pull: { products: { productId } } },
-                { new: true }
-            );
-            return res.status(200).json({
-                success: true,
-                message: "Product removed",
-                data: updatedCart
-            });
-        }
+            if (!existingProduct) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Product not found in cart"
+                });
+            }
 
-        if (existingProduct && decrease) {
+            cart.products = cart.products.filter(
+                (p) => p.productId.toString() !== productId.toString()
+            );
+        } else if (existingProduct && decrease) {
             existingProduct.quantity -= quantity;
 
             if (existingProduct.quantity <= 0) {
@@ -119,35 +129,38 @@ export const updateCart = async (req, res) => {
                     (p) => p.productId.toString() !== productId.toString()
                 );
             }
-
-            await cart.save();
-            return res.status(200).json({
-                success: true,
-                message: "Quantity decreased",
-                data: cart
-            });
-        }
-
-        if (existingProduct && !decrease) {
+        } else if (existingProduct && !decrease) {
             existingProduct.quantity += quantity;
-            await cart.save();
-            return res.status(200).json({
-                success: true,
-                message: "Quantity updated",
-                data: cart
+        } else {
+            const product = await Product.findById(productId).select("price");
+            if (!product) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Product not found"
+                });
+            }
+
+            const price = Number(product.price) || 0;
+
+            cart.products.push({
+                productId,
+                quantity,
+                price
             });
         }
 
-        const updatedCart = await Cart.findByIdAndUpdate(
-            cartId,
-            { $push: { products: { productId, quantity } } },
-            { new: true }
-        );
+        cart.totalPrice = (cart.products || []).reduce((sum, item) => {
+            const price = Number(item.price) || 0;
+            const qty = Number(item.quantity) || 0;
+            return sum + price * qty;
+        }, 0);
+
+        await cart.save();
 
         return res.status(200).json({
             success: true,
-            message: "Product added to cart",
-            data: updatedCart
+            message: "Cart updated",
+            data: cart
         });
 
     } catch (error) {

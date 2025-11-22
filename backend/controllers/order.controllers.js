@@ -5,6 +5,7 @@ import User from "../models/user.model.js"
 import Store from "../models/store.model.js"
 
 
+
 export const createOrder = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -36,6 +37,7 @@ export const createOrder = async (req, res) => {
         const userlocation = await User.findById(userId).select("+userlocation");
         const storeLocation = await Store.findById(storeId).select("+storeLocation");
 
+        const price = cart.totalPrice
 
         const order = await Order.create({
             storeId: storeId,
@@ -43,7 +45,8 @@ export const createOrder = async (req, res) => {
             product: cart,
             pickUpLocation: storeLocation.storeLocation,
             deliveryLocation: userlocation.userlocation,
-            status: "pending"
+            status: "pending",
+            totalPrice: price
         });
 
 
@@ -316,3 +319,39 @@ export const getStoreOrder = async (req, res) => {
         });
     }
 }
+
+export const getOrderById = async (req, res) => {
+    try {
+        const orderId = req.body.id;
+
+        if (!orderId) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid order ID."
+            });
+        }
+
+        const order = await Order.findById(orderId);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found."
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Here is the order.",
+            data: order
+        });
+
+    } catch (error) {
+        console.error(`Error fetching order ${error}`);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error.",
+        });
+    }
+};

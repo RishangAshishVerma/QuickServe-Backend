@@ -21,17 +21,26 @@ const cartSchema = new mongoose.Schema({
             quantity: {
                 type: Number,
                 default: 1
-            }
+            },
+            price: {
+                type: Number,
+                required: true,
+            },
         }
     ],
 
+    totalPrice: {
+        type: Number,
+        required: true,
+    },
+    
     isPlaced: {
         type: String,
         enum: ["placed", "cancel", "notPlaced"],
         default: "notPlaced"
     }
 
-},{ timestamps: true });
+}, { timestamps: true });
 
 const Cart = mongoose.model("cart", cartSchema)
 
