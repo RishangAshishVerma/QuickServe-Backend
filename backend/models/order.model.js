@@ -16,6 +16,10 @@ const orderSchema = new mongoose.Schema(
             required: true,
         },
 
+        paymentIntentId: {
+            type: String
+        },
+        
         product: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Cart",
@@ -40,7 +44,18 @@ const orderSchema = new mongoose.Schema(
         status: {
             type: String,
             enum: ["pending", "accepted", "out for delivery", "delivered", "cancelled"],
-            default:  "pending",
+            default: "pending",
+        },
+
+        paymentStatus: {
+            type: String,
+            enum: ["cash", "paid"],
+            default: "cash"
+        },
+
+        isreorder: {
+            type: Boolean,
+            default: "false"
         },
     },
     { timestamps: true }

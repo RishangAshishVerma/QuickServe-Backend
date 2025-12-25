@@ -3,8 +3,9 @@ import Cart from "../models/cart.model.js";
 import Order from "../models/order.model.js";
 import User from "../models/user.model.js"
 import Store from "../models/store.model.js"
+import Stripe from "stripe";
 
-
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const createOrder = async (req, res) => {
     try {
@@ -46,11 +47,31 @@ export const createOrder = async (req, res) => {
             pickUpLocation: storeLocation.storeLocation,
             deliveryLocation: userlocation.userlocation,
             status: "pending",
-            totalPrice: price
+            totalPrice: price,
+            paymentStatus
         });
 
+        const totalAmount = order.totalPrice
 
-        return res.status(200).json(order);
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: totalAmount * 100,
+            currency: "inr",
+            automatic_payment_methods: { enabled: true },
+            metadata: {
+                orderId: order._id.toString(),
+            },
+        });
+
+        order.paymentIntentId = paymentIntent.id;
+        order.paymentStatus = paid;
+        await order.save();
+
+        return res.status(200).json({
+            success: true,
+            orderId: order._id,
+            clientSecret: paymentIntent.client_secret,
+        });
+
 
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
