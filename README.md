@@ -2,10 +2,6 @@
 
 A scalable RESTful backend for a grocery delivery platform built using **Node.js**, **Express.js**, and **MongoDB**. The project provides secure authentication, product management, cart functionality, order processing, payment integration, and image upload capabilities.
 
-> **⚠️ Project Status:** Under Active Development
->
-> This project is continuously being improved with new features, optimizations, testing, and better documentation. Future updates include Docker support, API documentation, automated testing, CI/CD, Redis caching, and additional security enhancements.
-
 ---
 
 ## ✨ Features
