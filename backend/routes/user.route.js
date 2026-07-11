@@ -5,8 +5,8 @@ import { getUserById, searchUsers, suspendUser, unsuspendUser } from "../control
 
 const userRouter = express.Router()
 
-userRouter.get("/search-users", isAuth, authorizeRole("support", "admin"), searchUsers)
-userRouter.get("/users/:id", isAuth, authorizeRole("support", "admin"), getUserById)
+userRouter.get("/search-users", isAuth, authorizeRole( "admin"), searchUsers)
+userRouter.get("/users/:id", isAuth, authorizeRole( "admin"), getUserById)
 userRouter.post("/suspend-users/:id", isAuth, authorizeRole("admin"), suspendUser)
 userRouter.post("/unsuspend-users/:id", isAuth, authorizeRole("admin"), unsuspendUser)
 

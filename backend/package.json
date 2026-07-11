@@ -4,9 +4,7 @@
   "description": "A Node.js and MongoDB-based backend for an instant delivery platform inspired by Blinkit. It provides secure RESTful APIs for user authentication, product management, cart handling, and order processing. Built with Express.js, Mongoose, and JWT for scalable and secure backend architecture.",
   "main": "index.js",
   "type": "module",
-  "scripts": {
-    "dev": "nodemon -r dotenv/config index.js"
-  },
+  ,
   "author": "",
   "license": "ISC",
   "dependencies": {
